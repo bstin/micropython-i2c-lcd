@@ -59,6 +59,8 @@ class LCD:
         self._display_mode: int = 0
         self._display_function: int = 0
         self._cursor_position: Tuple[int, int] = (0, 0)  # (x, y)
+        self._newline_char="\n"
+        self._center_char="\c"
 
     @property
     def addr(self) -> int:
@@ -396,15 +398,23 @@ class LCD:
     def print(self, text: str) -> None:
         """
         Print text on LCD
-
         :param      test: Text to show on the LCD
         :type       text: str
+        Note:
+            - if self._newline_char is passed line will be broken there
+            - if self._center_char is found, line will be centered
         """
         _cursor_x, _cursor_y = self.cursor_position
-
-        for char in text:
-            self._command(value=ord(char), mode=Const.RS)
-
+        split_str=text.split(self._newline_char)
+        for line in split_str:
+            if line.find('\c')>=0:
+                newline=line.strip('\c')
+                newline=newline.center(self._cols)
+            else:
+                newline=line
+            for char in newline:
+                self._command(value=ord(char), mode=Const.RS)
+            self.set_cursor(0,1)
         self.cursor_position = (_cursor_x + len(text), _cursor_y)
 
     def _command(self, value: int, mode: int = 0) -> None:
@@ -452,3 +462,4 @@ class LCD:
         :type       value:  int
         """
         self._i2c.writeto(self.addr, bytes([value | self._backlightval]))
+
